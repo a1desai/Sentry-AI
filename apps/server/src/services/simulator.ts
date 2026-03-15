@@ -32,7 +32,8 @@ export const SCENARIO_NAMES = [
   'safe_login',
   'malicious_login',
   'phishing_email',
-  'url_click'
+  'url_click',
+  'data_exfiltration'
 ] as const;
 
 export type ScenarioName = typeof SCENARIO_NAMES[number];
@@ -113,6 +114,26 @@ export class SimulatorService {
           context: {
             mfaUsed: false,
             privilegedUser: false,
+            allowlistMatch: false
+          }
+        };
+
+      case 'data_exfiltration':
+        return {
+          eventId,
+          eventType: 'data_exfiltration',
+          user,
+          sourceIp: MALICIOUS_IPS[Math.floor(Math.random() * MALICIOUS_IPS.length)],
+          timestamp,
+          artifacts: {
+            destination: 'https://exfil-server-ru.net/upload',
+            fileCount: 42,
+            totalSize: '2.4GB',
+            protocol: 'RCLONE'
+          },
+          context: {
+            mfaUsed: false,
+            privilegedUser: true,
             allowlistMatch: false
           }
         };

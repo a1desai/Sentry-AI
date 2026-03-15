@@ -7,6 +7,9 @@ import Link from 'next/link';
 import { EventIcon, RiskBadge, formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
 import { apiFetch, apiUrl } from '@/lib/api';
 
+import { motion } from 'framer-motion';
+import { ThreatVelocityChart } from '@/components/dashboard/ThreatChart';
+
 export default function DashboardPage() {
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,13 +57,23 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="p-8 max-w-7xl mx-auto w-full"
+    >
       <div className="flex justify-between items-end mb-10">
         <div>
-          <div className="flex items-center space-x-2 text-blue-600 font-bold text-xs uppercase tracking-[0.3em] mb-2">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center space-x-2 text-blue-600 font-bold text-xs uppercase tracking-[0.3em] mb-2"
+          >
             <div className="w-8 h-1 bg-blue-600 rounded-full" />
             <span>Mission Control</span>
-          </div>
+          </motion.div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">SOC Dashboard</h1>
           <p className="text-slate-500 mt-2 font-medium">Real-time fraud surveillance and autonomous triage hub</p>
         </div>
@@ -81,12 +94,23 @@ export default function DashboardPage() {
       {/* Metrics Cards */}
       <div className="grid grid-cols-4 gap-6 mb-10">
         {metrics.map((m, i) => (
-          <div key={i} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 flex flex-col relative overflow-hidden group hover:shadow-md transition-all">
+          <motion.div 
+            key={i} 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 * i }}
+            className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 flex flex-col relative overflow-hidden group hover:shadow-md transition-all cursor-default"
+          >
             <div className="absolute top-0 left-0 w-full h-1 bg-slate-100 group-hover:bg-blue-600 transition-colors" />
             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{m.label}</span>
             <span className={`text-4xl font-black mt-3 tracking-tighter ${m.color}`}>{m.value}</span>
-          </div>
+          </motion.div>
         ))}
+      </div>
+
+      {/* Top Chart Section */}
+      <div className="mb-10">
+        <ThreatVelocityChart />
       </div>
 
       <div className="grid grid-cols-12 gap-8">
@@ -188,11 +212,19 @@ export default function DashboardPage() {
                 onClick={() => simulateScenario('url_click')}
                 loading={simulating === 'url_click'}
               />
+              <div className="pt-4 border-t border-slate-800">
+                <ScenarioButton 
+                  label="🔥 Complex Breach" desc="Multi-stage Phish -> ATO -> Exfil" 
+                  onClick={() => simulateScenario('complex_breach')}
+                  loading={simulating === 'complex_breach'}
+                  variant="danger"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -218,26 +250,28 @@ function ScenarioButton({
   variant?: 'default' | 'danger' | 'warning';
 }) {
   const baseColors = variant === 'danger' 
-    ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400' 
+    ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 shadow-red-500/5' 
     : variant === 'warning'
-      ? 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 text-amber-400'
-      : 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/40 text-blue-400';
+      ? 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 text-amber-400 shadow-amber-500/5'
+      : 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/40 text-blue-400 shadow-blue-500/5';
 
   return (
-    <button 
+    <motion.button 
+      whileHover={{ scale: 1.02, x: 5 }}
+      whileTap={{ scale: 0.98 }}
       onClick={onClick} 
       disabled={loading}
-      className={`w-full text-left p-4 rounded-2xl border ${baseColors} transition-all duration-300 group flex justify-between items-center shadow-lg shadow-black/10`}
+      className={`w-full text-left p-4 rounded-2xl border ${baseColors} transition-all duration-300 group flex justify-between items-center shadow-lg`}
     >
       <div>
         <div className="font-black text-xs uppercase tracking-widest">{label}</div>
         <div className="text-[10px] opacity-60 mt-1 font-bold">{desc}</div>
       </div>
       {loading ? (
-        <RefreshCw className="w-3 h-3 animate-spin" />
+        <RefreshCw className="w-4 h-4 animate-spin" />
       ) : (
-        <Play className="w-3 h-3 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+        <Play className="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
       )}
-    </button>
+    </motion.button>
   );
 }

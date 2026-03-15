@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { CaseRecord, ChatMessage, ToolCall } from '@sentry/shared';
 import { apiFetch, apiUrl } from '@/lib/api';
 import { formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
+import { motion, AnimatePresence } from 'framer-motion';
+import { RelationshipGraph } from '@/components/cases/RelationshipGraph';
 
 type CaseDetail = CaseRecord & {
   chatMessages?: ChatMessage[];
@@ -190,69 +192,48 @@ export default function CaseDetailPage() {
             </div>
           </header>
 
-          {/* Attack Storyline / Timeline */}
+          {/* Attack Relationship Graph */}
           {storyline && (
-            <section className="mb-10">
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5">
-                  <History className="w-24 h-24" />
-                </div>
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center">
-                    <Zap className="w-4 h-4 mr-2 text-amber-500" /> Fraud Attack Storyline
-                  </h3>
-                  <div className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">
-                    {storyline.correlationReason}
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  {storyline.links.map((link, idx) => (
-                    <div key={link.caseId} className="flex-1 group relative">
-                      {/* Connection Line */}
-                      {idx < storyline.links.length - 1 && (
-                        <div className="absolute top-3 left-1/2 w-full h-0.5 bg-slate-100 group-hover:bg-blue-100 transition-colors" />
-                      )}
-                      
-                      <div className="flex flex-col items-center relative z-10 px-2">
-                        <div className={`w-6 h-6 rounded-full border-4 border-white shadow-sm flex items-center justify-center transition-all ${
-                          link.caseId === id 
-                            ? 'bg-blue-600 scale-125 ring-4 ring-blue-100' 
-                            : link.classification === 'HIGH' ? 'bg-red-500' : 'bg-slate-200'
-                        }`}>
-                          {link.caseId === id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                        </div>
-                        <div className="mt-4 text-center">
-                          <div className={`text-[10px] font-black uppercase tracking-tight ${link.caseId === id ? 'text-blue-600' : 'text-slate-400'}`}>
-                            {link.eventType.replace('_', ' ')}
-                          </div>
-                          <div className={`text-[8px] font-bold uppercase ${
-                            link.classification === 'HIGH' ? 'text-red-500' : 'text-slate-400'
-                          }`}>
-                            {link.classification} RISK
-                          </div>
-                          <div className="text-[9px] text-slate-400 mt-0.5 font-mono">
-                            {new Date(link.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                          {link.caseId !== id && (
-                            <Link href={`/case/${link.caseId}`} className="mt-2 inline-flex items-center text-[9px] font-bold text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
-                              Pivot to Case <ExternalLink className="w-2.5 h-2.5 ml-1" />
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <motion.section 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mb-10"
+            >
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center">
+                  <Zap className="w-4 h-4 mr-2 text-amber-500" /> Threat Relationship Cloud
+                </h3>
+                <div className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
+                  {storyline.correlationReason}
                 </div>
               </div>
-            </section>
+              
+              <RelationshipGraph 
+                nodes={storyline.links.map((l, i) => ({
+                  id: l.caseId,
+                  label: l.eventType.replace('_', ' '),
+                  type: l.caseId === id ? 'current' : 'historical',
+                  classification: l.classification as any,
+                  x: 100 + (i * 150),
+                  y: 150 + (Math.sin(i) * 50)
+                }))}
+                links={storyline.links.slice(0, -1).map((l, i) => ({
+                  source: l.caseId,
+                  target: storyline.links[i+1].caseId
+                }))}
+              />
+            </motion.section>
           )}
 
           <div className="grid grid-cols-12 gap-8">
             {/* Left: Guidance & Evidence */}
             <div className="col-span-12 lg:col-span-4 space-y-6">
               {/* Guidance Card */}
-              <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-slate-800">
+              <motion.div 
+                whileHover={{ y: -5 }}
+                className="bg-slate-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-slate-800"
+              >
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                   <ShieldAlert className="w-20 h-20 text-blue-500" />
                 </div>
@@ -289,7 +270,7 @@ export default function CaseDetailPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Action Result */}
               <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
@@ -386,78 +367,88 @@ export default function CaseDetailPage() {
       </div>
 
       {/* Chat Sidebar Panel */}
-      <aside className={`fixed right-0 top-0 h-full w-[400px] bg-white border-l border-slate-200 shadow-2xl flex flex-col transition-all transform z-[100] ${
-        chatOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-slate-900 tracking-tight">Ask Sentry AI</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Case-aware Assistant</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setChatOpen(false)}
-            className="p-2 rounded-xl text-slate-400 hover:bg-white hover:text-slate-600 transition-all border border-transparent hover:border-slate-100 shadow-sm"
+      <AnimatePresence>
+        {chatOpen && (
+          <motion.aside 
+            initial={{ x: 400 }}
+            animate={{ x: 0 }}
+            exit={{ x: 400 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+            className="fixed right-0 top-0 h-full w-[400px] bg-white/80 backdrop-blur-xl border-l border-slate-200 shadow-2xl flex flex-col z-[100]"
           >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-6" ref={chatScrollRef}>
-          {chatHistory.length === 0 && (
-            <div className="text-center py-12 opacity-40">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-              <p className="text-xs font-bold text-slate-500">How can I help you investigate this case further?</p>
-            </div>
-          )}
-          {chatHistory.map((msg, idx) => (
-            <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed ${
-                msg.role === 'user' 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' 
-                  : 'bg-slate-100 text-slate-800'
-              }`}>
-                {msg.content}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight">Ask Sentry AI</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Case-aware Assistant</p>
+                </div>
               </div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 px-1">
-                {msg.role} &bull; {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              <button 
+                onClick={() => setChatOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:bg-white hover:text-slate-600 transition-all border border-transparent hover:border-slate-100 shadow-sm"
+              >
+                <ArrowLeft className="w-5 h-5 rotate-180" />
+              </button>
             </div>
-          ))}
-          {chatLoading && (
-            <div className="flex items-center space-x-2 text-slate-400">
-              <RefreshCw className="animate-spin w-3 h-3" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Assistant is thinking...</span>
-            </div>
-          )}
-        </div>
 
-        <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-          <form onSubmit={handleSendMessage} className="relative">
-            <input 
-              type="text"
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              placeholder="Ask about evidence, risk, or actions..."
-              className="w-full bg-white border border-slate-200 rounded-2xl pl-4 pr-12 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-            />
-            <button 
-              type="submit"
-              disabled={!chatMessage || chatLoading}
-              className="absolute right-2 top-2 p-1.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-          <p className="text-[9px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">
-            Always verify AI suggestions against primary evidence.
-          </p>
-        </div>
-      </aside>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6" ref={chatScrollRef}>
+              {chatHistory.length === 0 && (
+                <div className="text-center py-12 opacity-40">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                  <p className="text-xs font-bold text-slate-500">How can I help you investigate this case further?</p>
+                </div>
+              )}
+              {chatHistory.map((msg, idx) => (
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                >
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-blue-600 text-white shadow-blue-600/10' 
+                      : 'bg-white border border-slate-100 text-slate-800'
+                  }`}>
+                    {msg.content}
+                  </div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 px-1">
+                    {msg.role} &bull; {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </motion.div>
+              ))}
+              {chatLoading && (
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <RefreshCw className="animate-spin w-3 h-3" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Assistant is thinking...</span>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+              <form onSubmit={handleSendMessage} className="relative">
+                <input 
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Ask about evidence, risk, or actions..."
+                  className="w-full bg-white border border-slate-200 rounded-2xl pl-4 pr-12 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                />
+                <button 
+                  type="submit"
+                  disabled={!chatMessage || chatLoading}
+                  className="absolute right-2 top-2 p-1.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
