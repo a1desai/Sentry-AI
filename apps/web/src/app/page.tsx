@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Play } from 'lucide-react';
+import { RefreshCw, Play, Activity, Cpu, History } from 'lucide-react';
 import { CaseRecord } from '@sentry/shared';
 import Link from 'next/link';
 import { EventIcon, RiskBadge, formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
@@ -58,115 +58,187 @@ export default function DashboardPage() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="p-8 max-w-7xl mx-auto w-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="p-10 max-w-7xl mx-auto w-full space-y-12"
     >
-      <div className="flex justify-between items-end mb-10">
-        <div>
+      <div className="flex justify-between items-start">
+        <div className="space-y-1">
           <motion.div 
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center space-x-2 text-blue-600 font-bold text-xs uppercase tracking-[0.3em] mb-2"
+            className="flex items-center space-x-2 text-blue-400 font-black text-[10px] uppercase tracking-[0.4em]"
           >
-            <div className="w-8 h-1 bg-blue-600 rounded-full" />
-            <span>Mission Control</span>
+            <Activity className="w-3 h-3 animate-pulse" />
+            <span>Tactical Operations Hub</span>
           </motion.div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">SOC Dashboard</h1>
-          <p className="text-slate-500 mt-2 font-medium">Real-time fraud surveillance and autonomous triage hub</p>
+          <h1 className="text-5xl font-black text-white tracking-tighter">Command <span className="text-blue-500">Center</span></h1>
+          <p className="text-slate-500 font-bold text-sm">Autonomous threat orchestration & real-time remediation</p>
         </div>
-        <div className="flex items-center space-x-3">
-           <Link href="/investigations" className="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest mr-4">
-             Archive &rarr;
-           </Link>
+        
+        <div className="flex items-center space-x-4">
+          <div className="flex flex-col items-end mr-6">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Gateway Status</span>
+            <span className="text-xs font-black text-green-500 flex items-center">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 shadow-[0_0_8px_#10b981]" />
+              ENCRYPTED_LINK_ACTIVE
+            </span>
+          </div>
           <button 
             onClick={fetchCases} 
-            className="flex items-center text-sm font-bold px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 text-slate-700 transition-all hover:border-slate-300"
+            className="flex items-center px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 hover:border-blue-500/30 transition-all shadow-xl backdrop-blur-md"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin text-blue-500' : ''}`} />
-            Sync Hub
+            <RefreshCw className={`w-3.5 h-3.5 mr-2.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
+            Resync Data
           </button>
         </div>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-4 gap-6 mb-10">
+      {/* Primary Metrics Grid */}
+      <div className="grid grid-cols-4 gap-8">
         {metrics.map((m, i) => (
           <motion.div 
             key={i} 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 * i }}
-            className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 flex flex-col relative overflow-hidden group hover:shadow-md transition-all cursor-default"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="glass-card rounded-[2rem] p-8 group relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-full h-1 bg-slate-100 group-hover:bg-blue-600 transition-colors" />
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{m.label}</span>
-            <span className={`text-4xl font-black mt-3 tracking-tighter ${m.color}`}>{m.value}</span>
+            {/* Background Accent */}
+            <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] -mr-16 -mt-16 opacity-20 transition-opacity group-hover:opacity-40 ${
+              m.color.includes('red') ? 'bg-red-500' : m.color.includes('blue') ? 'bg-blue-500' : 'bg-green-500'
+            }`} />
+            
+            <div className="relative z-10 flex flex-col">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center">
+                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                  m.color.includes('red') ? 'bg-red-500' : m.color.includes('blue') ? 'bg-blue-500' : 'bg-green-500'
+                }`} />
+                {m.label}
+              </span>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-5xl font-black text-white tracking-tighter">
+                  {m.value}
+                </span>
+                <span className="text-[10px] font-black text-slate-600">UNIT/S</span>
+              </div>
+              <div className="mt-6 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: '70.5%' }}
+                  className={`h-full opacity-60 ${
+                    m.color.includes('red') ? 'bg-red-500' : m.color.includes('blue') ? 'bg-blue-500' : 'bg-green-500'
+                  }`}
+                />
+              </div>
+            </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Top Chart Section */}
-      <div className="mb-10">
-        <ThreatVelocityChart />
-      </div>
+      <div className="grid grid-cols-12 gap-10">
+        <div className="col-span-12 lg:col-span-8 space-y-10">
+          {/* Main Visual: Velocity Chart */}
+          <div className="glass-card rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden">
+             <div className="flex justify-between items-center mb-10">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white tracking-tight">Threat Velocity Agent</h2>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Real-time Correlation Analysis</p>
+                  </div>
+                </div>
+                <div className="flex space-x-6 text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center text-blue-400">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 mr-2 shadow-[0_0_8px_#3b82f6]" /> ACTIVE_THREATS
+                  </div>
+                  <div className="flex items-center text-slate-500">
+                    <div className="w-2 h-2 rounded-full bg-slate-700 mr-2" /> BASELINE_HIST
+                  </div>
+                </div>
+             </div>
+             
+             <div className="h-[300px] w-full">
+               <ThreatVelocityChart />
+             </div>
+          </div>
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* Main Table Area */}
-        <div className="col-span-12 lg:col-span-8">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-              <h2 className="font-black text-slate-900 uppercase tracking-widest text-xs">Priority Investigations</h2>
-              <span className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded uppercase">TOP 5 ACTIVE</span>
+          {/* Active Queue Table */}
+          <div className="glass-card rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl">
+            <div className="px-10 py-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+              <h2 className="font-black text-white uppercase tracking-widest text-[11px] flex items-center">
+                <History className="w-4 h-4 mr-3 text-blue-500" /> Recent Operations Log
+              </h2>
+              <span className="text-[9px] font-black text-blue-400 border border-blue-500/20 bg-blue-500/10 px-3 py-1 rounded-full tracking-widest">
+                LIVE_FEED_v6
+              </span>
             </div>
+            
             <div className="overflow-x-auto">
               {cases.length === 0 && !loading ? (
-                <div className="p-16 text-center text-slate-400 font-medium">No active investigations. Run a scenario to begin triage.</div>
+                <div className="p-20 text-center text-slate-500 font-black uppercase tracking-[0.2em] text-xs">Awaiting operational data...</div>
               ) : (
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-white border-b border-slate-100 text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">
+                <table className="w-full text-left">
+                  <thead className="text-slate-600 font-black uppercase tracking-[0.3em] text-[9px] border-b border-white/5">
                     <tr>
-                      <th className="px-8 py-4">Security Event</th>
-                      <th className="px-8 py-4">Triage Time</th>
-                      <th className="px-8 py-4 text-center">Risk Level</th>
-                      <th className="px-8 py-4 text-right">Action</th>
+                      <th className="px-10 py-6">Operation / ID</th>
+                      <th className="px-10 py-6">Timestamp</th>
+                      <th className="px-10 py-6 text-center">Threat Class</th>
+                      <th className="px-10 py-6 text-right">Autonomous Policy</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-white/[0.02]">
                     {cases.map((c) => (
                       <tr 
                         key={c.caseId} 
                         onClick={() => window.location.href = `/case/${c.caseId}`}
-                        className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                        className="hover:bg-white/[0.03] transition-all cursor-pointer group"
                       >
-                        <td className="px-8 py-5">
-                          <div className="flex items-center space-x-4">
-                            <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-white transition-colors border border-transparent group-hover:border-blue-100">
+                        <td className="px-10 py-7">
+                          <div className="flex items-center space-x-5">
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-blue-500/30 transition-colors shadow-lg shadow-black/20 relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                               <EventIcon type={c.eventType} />
                             </div>
                             <div>
-                               <div className="font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors capitalize">{formatEventTypeLabel(c.eventType)}</div>
-                               <div className="text-[10px] font-mono font-bold text-slate-400 uppercase">ID: {c.caseId.slice(0, 8)}</div>
+                               <div className="font-black text-white text-base tracking-tight transition-colors group-hover:text-blue-400 capitalize">{formatEventTypeLabel(c.eventType)}</div>
+                               <div className="text-[10px] font-mono font-black text-slate-600 uppercase tracking-widest flex items-center mt-1">
+                                 <div className="w-1 h-1 bg-slate-600 rounded-full mr-2" />
+                                 SEC-{c.caseId.slice(0, 8)}
+                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-8 py-5 text-slate-500 font-semibold text-xs whitespace-nowrap">
-                          {formatCaseAge(c.createdAt)}
-                        </td>
-                        <td className="px-8 py-5 text-center">
-                          <div className="flex flex-col items-center">
-                            <RiskBadge classification={c.classification} />
-                            <span className="text-[9px] font-mono font-black text-slate-300 mt-1">SCORE {c.riskScore}</span>
+                        <td className="px-10 py-7">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-slate-300 tracking-tight">{formatCaseAge(c.createdAt)}</span>
+                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">UTC_RES_01</span>
                           </div>
                         </td>
-                        <td className="px-8 py-5 text-right">
-                          <div className="flex items-center justify-end space-x-3">
-                            <span className="inline-flex items-center text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                              {formatActionLabel(c.action)}
-                            </span>
-                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-colors" />
+                        <td className="px-10 py-7">
+                          <div className="flex flex-col items-center">
+                            <RiskBadge classification={c.classification} />
+                            <div className="flex items-center mt-2 space-x-2">
+                              <span className="text-[9px] font-mono font-black text-slate-600 uppercase tracking-widest">SCORE</span>
+                              <span className="text-[10px] font-black text-white tracking-tighter">{c.riskScore}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-10 py-7 text-right">
+                          <div className="flex items-center justify-end space-x-6">
+                            <div className="flex flex-col items-end">
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                c.action === 'allow' ? 'text-green-500' : 'text-blue-400'
+                              }`}>
+                                {formatActionLabel(c.action)}
+                              </span>
+                              <span className="text-[8px] font-bold text-slate-700 uppercase tracking-[0.2em] mt-1 italic">ENFORCED_BY_SENTRY</span>
+                            </div>
+                            <div className="p-2 bg-white/5 rounded-lg border border-white/10 group-hover:bg-blue-600 group-hover:border-blue-500 transition-all">
+                              <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -175,19 +247,30 @@ export default function DashboardPage() {
                 </table>
               )}
             </div>
+            <div className="px-10 py-4 bg-white/5 border-t border-white/5 flex justify-center">
+               <Link href="/investigations" className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] hover:text-blue-300 transition-colors">
+                 View Full Archives &rarr;
+               </Link>
+            </div>
           </div>
         </div>
 
-        {/* Demo Controller Sidebar */}
-        <div className="col-span-12 lg:col-span-4">
-          <div className="bg-slate-900 rounded-3xl p-8 shadow-2xl relative overflow-hidden border border-slate-800">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Play className="w-20 h-20 text-blue-500" />
+        {/* Tactical HUD Sidebar */}
+        <div className="col-span-12 lg:col-span-4 space-y-10">
+          <div className="glass-card rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+            
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="font-black text-white uppercase tracking-[0.2em] text-xs">
+                  Scenario <span className="text-blue-500 italic">HUD</span>
+                </h2>
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Manual Event Injection</p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                <Play className="w-5 h-5 text-blue-500" />
+              </div>
             </div>
-            <h2 className="font-black text-blue-400 uppercase tracking-[0.2em] text-xs mb-2">
-              Scenario Simulator
-            </h2>
-            <p className="text-xs text-slate-500 mb-8 font-medium">Inject synthetic high-fidelity audit events</p>
             
             <div className="space-y-4 relative z-10">
               <ScenarioButton 
@@ -202,13 +285,13 @@ export default function DashboardPage() {
                 variant="danger"
               />
               <ScenarioButton 
-                label="Data Exfil" desc="Sensitive data exfiltration attempt" 
+                label="Data Exfil" desc="RCLONE sensitive transfer" 
                 onClick={() => simulateScenario('data_exfiltration')}
                 loading={simulating === 'data_exfiltration'}
                 variant="danger"
               />
               <ScenarioButton 
-                label="Fin Fraud" desc="Unauthorized financial transaction" 
+                label="Fin Fraud" desc="Unauthorized transfer (TD Track)" 
                 onClick={() => simulateScenario('financial_fraud')}
                 loading={simulating === 'financial_fraud'}
                 variant="danger"
@@ -219,20 +302,39 @@ export default function DashboardPage() {
                 loading={simulating === 'phishing_email'}
                 variant="warning"
               />
-              <ScenarioButton 
-                label="Suspicious Link" desc="Redirect to bad domain" 
-                onClick={() => simulateScenario('url_click')}
-                loading={simulating === 'url_click'}
-              />
-              <div className="pt-4 border-t border-slate-800">
+              
+              <div className="pt-6 mt-6 border-t border-white/10">
                 <ScenarioButton 
-                  label="🔥 Complex Breach" desc="Multi-stage Phish -> ATO -> Exfil" 
+                  label="🔥 Complex Breach" desc="Phish -> ATO -> Data Exfil" 
                   onClick={() => simulateScenario('complex_breach')}
                   loading={simulating === 'complex_breach'}
                   variant="danger"
                 />
               </div>
             </div>
+          </div>
+
+          {/* Quick Stats Panel */}
+          <div className="glass-card rounded-[2.5rem] p-8 border border-white/5 relative overflow-hidden">
+             <div className="flex items-center space-x-3 mb-6">
+                <Cpu className="w-4 h-4 text-blue-400" />
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">Active Core Status</span>
+             </div>
+             <div className="space-y-5">
+                {[
+                  { label: 'Ingestion Rate', value: '4.2k eps', sub: 'OPTIMAL' },
+                  { label: 'ML Inference', value: '184ms', sub: 'STABLE' },
+                  { label: 'Containment', value: 'AUTOMATED', sub: 'ACTIVE' },
+                ].map((stat, idx) => (
+                  <div key={idx} className="flex justify-between items-end border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                    <div>
+                      <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</div>
+                      <div className="text-xl font-black text-white tracking-tighter mt-1">{stat.value}</div>
+                    </div>
+                    <div className="text-[9px] font-black text-blue-500/60 uppercase tracking-widest italic">{stat.sub}</div>
+                  </div>
+                ))}
+             </div>
           </div>
         </div>
       </div>

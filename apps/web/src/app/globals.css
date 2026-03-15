@@ -1,18 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sentry-blue: #0f172a; /* Deep blue used in Sentry references */
-  --color-sentry-light: #f8fafc;
+  --color-sentry-slate: #020617;
+  --color-sentry-blue: #0f172a;
   --color-sentry-accent: #3b82f6;
+  --color-sentry-neon: #60a5fa;
+  --color-sentry-danger: #ef4444;
+  --color-sentry-warning: #f59e0b;
+  --color-sentry-success: #10b981;
   
-  --font-sans: "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
 
-body {
-  background-color: var(--color-sentry-light);
-  color: #1e293b;
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-200 antialiased;
+    background-image: 
+      radial-gradient(circle at 50% -20%, #1e293b 0%, transparent 70%),
+      radial-gradient(circle at 0% 0%, #0f172a 0%, transparent 50%);
+    background-attachment: fixed;
+  }
 }
 
-html, body {
-  height: 100%;
+@layer components {
+  .glass-card {
+    @apply bg-slate-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+  
+  .neon-border {
+    @apply border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)];
+  }
+
+  .neon-text {
+    @apply text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)];
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-700;
+}
+
+/* Scanners & Pulses */
+@keyframes scan {
+  0% { transform: translateY(-100vh); opacity: 0; }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(200vh); opacity: 0; }
+}
+
+.animate-scan {
+  animation: scan 8s linear infinite;
 }

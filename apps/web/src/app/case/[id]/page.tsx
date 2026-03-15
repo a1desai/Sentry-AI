@@ -6,7 +6,7 @@ import {
   ArrowLeft, CheckCircle, AlertTriangle, ShieldCheck, 
   RefreshCw, MessageSquare, Send, Activity,
   History, ShieldAlert, ExternalLink, ChevronRight, Zap, 
-  Headphones
+  Headphones, Database
 } from 'lucide-react';
 import Link from 'next/link';
 import { CaseRecord, ChatMessage, ToolCall } from '@sentry/shared';
@@ -133,130 +133,155 @@ export default function CaseDetailPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-slate-500 flex items-center justify-center h-screen"><RefreshCw className="animate-spin w-5 h-5 mr-2" /> Orchestrating evidence...</div>;
-  if (!caseData) return <div className="p-8 text-red-500">Case not found.</div>;
+  if (loading) return (
+    <div className="p-8 text-blue-400 font-black uppercase tracking-[0.3em] flex flex-col items-center justify-center h-screen space-y-4">
+      <RefreshCw className="animate-spin w-8 h-8" />
+      <span>Orchestrating Telemetry...</span>
+    </div>
+  );
+  
+  if (!caseData) return <div className="p-8 text-red-500 font-black uppercase tracking-widest text-center h-screen flex items-center justify-center">CRITICAL: Operational data shard not found.</div>;
 
   const { toolCalls, guidance, ...c } = caseData;
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Main Content Area */}
-      <div className={`flex-1 overflow-y-auto transition-all ${chatOpen ? 'mr-[400px]' : ''}`}>
-        <div className="p-8 max-w-6xl mx-auto w-full">
-          <header className="flex justify-between items-start mb-8">
-            <div className="space-y-4">
-              <Link href="/investigations" className="inline-flex items-center text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
-                <ArrowLeft className="w-3 h-3 mr-1.5" /> Investigation Archive
+    <div className="flex h-screen overflow-hidden relative">
+      <div className={`flex-1 overflow-y-auto transition-all duration-700 ease-in-out ${chatOpen ? 'mr-[450px]' : ''}`}>
+        <div className="p-10 max-w-6xl mx-auto w-full space-y-12">
+          <header className="flex justify-between items-start">
+            <div className="space-y-6">
+              <Link href="/investigations" className="inline-flex items-center text-[10px] font-black text-slate-500 hover:text-blue-400 transition-all uppercase tracking-[0.4em] group">
+                <ArrowLeft className="w-3 h-3 mr-2 group-hover:-translate-x-1 transition-transform" /> 
+                Return to Intelligence Vault
               </Link>
-              <div>
-                <div className="flex items-center space-x-3 mb-1">
-                  <h1 className="text-3xl font-black text-slate-900 tracking-tight">Case <span className="text-slate-400 font-mono font-medium">{id?.slice(0, 8)}</span></h1>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border ${
-                    c.classification === 'HIGH' ? 'bg-red-100 border-red-200 text-red-700' : 'bg-amber-100 border-amber-200 text-amber-700'
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-6">
+                  <h1 className="text-5xl font-black text-white tracking-tighter flex items-center">
+                    Case <span className="text-blue-500 font-mono ml-4 text-4xl">#{id?.slice(0, 8)}</span>
+                  </h1>
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.2em] uppercase border shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
+                    c.classification === 'HIGH' ? 'bg-red-600/20 border-red-500/30 text-red-400' : 'bg-amber-600/20 border-amber-500/30 text-amber-400'
                   }`}>
-                    {c.classification} Risk
+                    {c.classification} Risk Level
                   </span>
                 </div>
-                <div className="flex items-center text-sm text-slate-500 font-medium">
-                  <Activity className="w-4 h-4 mr-1.5 text-slate-400" />
-                  {formatEventTypeLabel(c.eventType).toUpperCase()} &bull; {formatCaseAge(c.createdAt)}
+                <div className="flex items-center space-x-6 text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                  <div className="flex items-center">
+                    <Activity className="w-4 h-4 mr-2 text-blue-500" />
+                    {formatEventTypeLabel(c.eventType)} SIGNAL
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+                  <div className="flex items-center">
+                    <History className="w-4 h-4 mr-2 text-slate-600" />
+                    Ingested {formatCaseAge(c.createdAt)}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <button 
-                onClick={handlePlayBrief}
-                disabled={briefingLoading}
-                className="flex items-center px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all disabled:opacity-50"
-              >
-                {briefingLoading ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Headphones className="w-4 h-4 mr-2" />
-                )}
-                AI Brief
-              </button>
-              <button 
-                onClick={() => setChatOpen(!chatOpen)}
-                className={`flex items-center px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all ${
-                  chatOpen ? 'bg-blue-600 text-white shadow-blue-600/20' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Ask Sentry AI
-              </button>
-              <div className="bg-slate-900 text-white px-6 py-2.5 rounded-xl shadow-lg border border-slate-800 flex flex-col items-center">
-                <span className="text-[10px] uppercase font-black tracking-tighter text-slate-500">Risk Score</span>
-                <span className="text-xl font-black">{c.riskScore}</span>
+            <div className="flex items-center space-x-4">
+              <div className="grid grid-cols-2 gap-3 mr-4">
+                 <button 
+                  onClick={handlePlayBrief}
+                  disabled={briefingLoading}
+                  className="flex items-center px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 shadow-xl hover:bg-indigo-600/20 transition-all disabled:opacity-30 group"
+                >
+                  {briefingLoading ? (
+                    <RefreshCw className="w-3.5 h-3.5 mr-2.5 animate-spin" />
+                  ) : (
+                    <Headphones className="w-3.5 h-3.5 mr-2.5 group-hover:scale-110 transition-transform" />
+                  )}
+                  Audio Brief
+                </button>
+                <button 
+                  onClick={() => setChatOpen(!chatOpen)}
+                  className={`flex items-center px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl group ${
+                    chatOpen 
+                      ? 'bg-blue-600 border border-blue-400 text-white shadow-blue-600/20' 
+                      : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:border-blue-500/30'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5 mr-2.5 group-hover:rotate-12 transition-transform" />
+                  AI Interrogator
+                </button>
+              </div>
+              
+              <div className="glass-card px-8 py-4 rounded-[1.5rem] border border-white/5 flex flex-col items-center">
+                <span className="text-[9px] uppercase font-black tracking-[0.3em] text-slate-600 mb-1">Threat Quotient</span>
+                <span className={`text-3xl font-black tracking-tighter ${
+                  c.riskScore > 70 ? 'text-red-500' : c.riskScore > 40 ? 'text-amber-500' : 'text-blue-500'
+                }`}>{c.riskScore}</span>
               </div>
             </div>
           </header>
 
-          {/* Attack Relationship Graph */}
+          {/* Attack Relationship Graph HUD */}
           {storyline && (
             <motion.section 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
             >
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center">
-                  <Zap className="w-4 h-4 mr-2 text-amber-500" /> Threat Relationship Cloud
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] flex items-center">
+                  <Zap className="w-4 h-4 mr-3 text-blue-500 animate-pulse" /> Signal Propagation Graph
                 </h3>
-                <div className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
-                  {storyline.correlationReason}
+                <div className="text-[9px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-4 py-1.5 rounded-full uppercase tracking-widest backdrop-blur-md">
+                  CORE_LINK: {storyline.correlationReason}
                 </div>
               </div>
               
-              <RelationshipGraph 
-                nodes={storyline.links.map((l, i) => ({
-                  id: l.caseId,
-                  label: l.eventType.replace('_', ' '),
-                  type: l.caseId === id ? 'current' : 'historical',
-                  classification: l.classification as any,
-                  x: 100 + (i * 150),
-                  y: 150 + (Math.sin(i) * 50)
-                }))}
-                links={storyline.links.slice(0, -1).map((l, i) => ({
-                  source: l.caseId,
-                  target: storyline.links[i+1].caseId
-                }))}
-              />
+              <div className="glass-card rounded-[2.5rem] p-1 border border-white/5 bg-slate-950/20 overflow-hidden">
+                <RelationshipGraph 
+                  nodes={storyline.links.map((l, i) => ({
+                    id: l.caseId,
+                    label: l.eventType.replace('_', ' '),
+                    type: l.caseId === id ? 'current' : 'historical',
+                    classification: l.classification as any,
+                    x: 100 + (i * 150),
+                    y: 150 + (Math.sin(i) * 50)
+                  }))}
+                  links={storyline.links.slice(0, -1).map((l, i) => ({
+                    source: l.caseId,
+                    target: storyline.links[i+1].caseId
+                  }))}
+                />
+              </div>
             </motion.section>
           )}
 
-          <div className="grid grid-cols-12 gap-8">
-            {/* Left: Guidance & Evidence */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              {/* Agent Analysis - NEW */}
+          <div className="grid grid-cols-12 gap-10">
+            {/* Left Wing: AI Analysis & Evidence */}
+            <div className="col-span-12 lg:col-span-4 space-y-10">
               <AgentAnalysis />
               
-              {/* Guidance Card */}
-              <motion.div 
-                whileHover={{ y: -5 }}
-                className="bg-slate-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-slate-800"
-              >
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <ShieldAlert className="w-20 h-20 text-blue-500" />
+              {/* Guidance Protocol Card */}
+              <div className="glass-card rounded-[2.5rem] p-10 shadow-3xl relative overflow-hidden group border border-blue-500/10 bg-slate-900/40">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                  <ShieldAlert className="w-24 h-24 text-blue-400" />
                 </div>
-                <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Sentry AI Guidance</h3>
                 
-                <div className="space-y-6 relative z-10">
+                <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-8 flex items-center">
+                   <ShieldCheck className="w-4 h-4 mr-3" /> Containment Protocol
+                </h3>
+                
+                <div className="space-y-10 relative z-10">
                   <div>
-                    <p className="text-sm font-medium text-slate-200 leading-relaxed italic border-l-2 border-blue-500 pl-4 py-1">
+                    <p className="text-base font-bold text-slate-100 leading-relaxed italic border-l-2 border-blue-600 pl-6 py-2">
                       &ldquo;{guidance?.summary || 'No guidance summary available.'}&rdquo;
                     </p>
                   </div>
 
                   {guidance?.containmentSteps && (
-                    <div className="space-y-3">
-                      <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Recommended Containment</h4>
-                      <ul className="space-y-2">
+                    <div className="space-y-4">
+                      <h4 className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-4">Tactical Countermeasures</h4>
+                      <ul className="space-y-3">
                         {guidance.containmentSteps.map((step: string, idx: number) => (
-                          <li key={idx} className="flex items-start text-xs text-slate-300 font-medium bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
-                            <CheckCircle className="w-3.5 h-3.5 text-blue-500 mr-2 shrink-0 mt-0.5" />
+                          <li key={idx} className="flex items-start text-xs font-bold text-slate-300 bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all">
+                            <div className="w-5 h-5 rounded-lg bg-blue-600/20 flex items-center justify-center mr-3 shrink-0">
+                               <CheckCircle className="w-3 h-3 text-blue-400" />
+                            </div>
                             {step}
                           </li>
                         ))}
@@ -264,50 +289,55 @@ export default function CaseDetailPage() {
                     </div>
                   )}
 
-                  <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                  <div className="pt-8 border-t border-white/5 flex items-center justify-between">
                     <div>
-                      <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Escalation Advice</h4>
-                      <div className="text-xs font-bold text-slate-100 uppercase tracking-tight">{guidance?.escalationAdvice || 'Standard observation.'}</div>
+                      <h4 className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1.5">Escalation Advice</h4>
+                      <div className="text-xs font-black text-white uppercase tracking-tighter">{guidance?.escalationAdvice || 'Standard observation protocol.'}</div>
                     </div>
-                    <div className="p-2 bg-blue-600 rounded-lg text-white">
-                      <ChevronRight className="w-4 h-4" />
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40">
+                      <ChevronRight className="w-5 h-5 text-white" />
                     </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Action Result */}
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Response Policy</h3>
-                  <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${
-                    c.actionStatus === 'executed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {c.actionStatus}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
-                    c.action === 'allow' ? 'bg-green-600 shadow-green-600/20' : 'bg-blue-600 shadow-blue-600/20'
-                  }`}>
-                    {c.action === 'allow' ? <ShieldCheck className="w-6 h-6 text-white" /> : <AlertTriangle className="w-6 h-6 text-white" />}
-                  </div>
-                  <div>
-                    <div className="text-lg font-black text-slate-900 tracking-tight uppercase">{formatActionLabel(c.action)}</div>
-                    <div className="text-xs text-slate-500 font-medium">Auto-enforced by Sentry Engine</div>
                   </div>
                 </div>
               </div>
 
-              {/* Evidence list */}
+              {/* Policy Enforcer Card */}
+              <div className="glass-card rounded-[2.5rem] p-10 shadow-2xl border border-white/5">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Autonomous Policy</h3>
+                  <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-inner ${
+                    c.actionStatus === 'executed' 
+                      ? 'bg-green-600/20 text-green-400 border border-green-500/30 shadow-[0_0_10px_#10b98122]' 
+                      : 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                  }`}>
+                    {c.actionStatus.toUpperCase()}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-6">
+                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-2xl relative overflow-hidden ${
+                    c.action === 'allow' ? 'bg-green-600 shadow-green-900/40' : 'bg-blue-600 shadow-blue-900/40'
+                  }`}>
+                    <div className="absolute inset-0 bg-white/10 opacity-20" />
+                    {c.action === 'allow' ? <ShieldCheck className="w-8 h-8 text-white relative z-10" /> : <AlertTriangle className="w-8 h-8 text-white relative z-10" />}
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-white tracking-tighter uppercase">{formatActionLabel(c.action)}</div>
+                    <div className="text-[10px] text-slate-600 font-black uppercase tracking-widest mt-1">Enforced by Sentry_Core_v2</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Evidence Vault Evidence list */}
               {c.evidenceList && c.evidenceList.length > 0 && (
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Evidence Bundle</h3>
+                <div className="glass-card rounded-[2.5rem] p-8 border border-white/5">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 flex items-center">
+                    <Database className="w-3.5 h-3.5 mr-2" /> Evidence Bundle
+                  </h3>
                   <div className="space-y-4">
                     {c.evidenceList.map((ev: string, idx: number) => (
-                      <div key={idx} className="flex items-start p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                        <div className="w-2 h-2 rounded-full bg-slate-300 mt-1.5 mr-3 group-hover:bg-blue-500 transition-colors" />
-                        <span className="text-xs font-bold text-slate-600 leading-normal">{ev}</span>
+                      <div key={idx} className="flex items-start p-4 bg-white/5 rounded-2xl border border-white/5 group hover:border-blue-500/20 transition-all">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-700 mt-1.5 mr-4 group-hover:bg-blue-500 transition-colors shadow-[0_0_8px_transparent] group-hover:shadow-[0_0_8px_#3b82f6]" />
+                        <span className="text-[11px] font-bold text-slate-400 group-hover:text-slate-200 transition-colors leading-relaxed">{ev}</span>
                       </div>
                     ))}
                   </div>
@@ -315,53 +345,70 @@ export default function CaseDetailPage() {
               )}
             </div>
 
-            {/* Right: Detailed Execution */}
-            <div className="col-span-12 lg:col-span-8 space-y-8">
-              <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight flex items-center">
-                    <History className="w-5 h-5 mr-3 text-slate-400" />
-                    Agent Reasoning Runtime
-                  </h3>
-                  <div className="flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest space-x-4">
-                    <span className="flex items-center"><div className="w-2 h-2 rounded-full bg-blue-500 mr-1.5" /> Logical Node</span>
-                    <span className="flex items-center"><div className="w-2 h-2 rounded-full bg-slate-100 mr-1.5 border border-slate-200" /> Latency Trace</span>
+            {/* Right Wing: Timeline & Detailed Logs */}
+            <div className="col-span-12 lg:col-span-8 space-y-10">
+              <div className="glass-card rounded-[3rem] border border-white/5 p-12 shadow-3xl">
+                <div className="flex items-center justify-between mb-12 pb-6 border-b border-white/5">
+                  <div className="space-y-1">
+                    <h3 className="text-2xl font-black text-white tracking-tighter flex items-center">
+                      <History className="w-6 h-6 mr-4 text-blue-500" />
+                      Agent Reasoning Runtime
+                    </h3>
+                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Autonomous Logical Sequence Audit</p>
+                  </div>
+                  <div className="flex items-center space-x-8 text-[10px] font-black uppercase tracking-[0.2em]">
+                    <div className="flex items-center text-blue-400">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-400 mr-2 shadow-[0_0_10px_#3b82f6]" /> LOGICAL_NODE
+                    </div>
+                    <div className="flex items-center text-slate-600">
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-800 mr-2" /> TELEMETRY_LIT
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-12 relative">
-                  <div className="absolute top-0 left-5 w-0.5 h-full bg-slate-50 z-0" />
+                <div className="space-y-16 relative">
+                  <div className="absolute top-0 left-6 w-px h-full bg-white/5 shadow-[0_0_10px_rgba(255,255,255,0.02)]" />
                   
-                  {toolCalls.map((tc) => (
-                    <div key={tc.id} className="relative pl-14 group z-10 transition-all hover:translate-x-1">
-                      <div className={`absolute left-[5px] top-1 w-6 h-6 rounded-full border-4 border-white shadow-md flex items-center justify-center transition-all ${
-                        tc.status === 'success' ? 'bg-blue-600' : 'bg-red-600'
-                      }`}>
-                        <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                      </div>
+                  {toolCalls.map((tc, i) => (
+                    <motion.div 
+                      key={tc.id} 
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="relative pl-16 group z-10"
+                    >
+                      <div className={`absolute left-[19px] top-1.5 w-3.5 h-3.5 rounded-full border-4 border-slate-950 shadow-2xl transition-all group-hover:scale-125 duration-300 ${
+                        tc.status === 'success' ? 'bg-blue-500 shadow-[0_0_12px_#3b82f6]' : 'bg-red-500 shadow-[0_0_12px_#ef4444]'
+                      }`} />
                       
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">{tc.tool.replace('_', ' ')}</h4>
+                          <h4 className="text-[11px] font-black text-blue-400/80 uppercase tracking-[0.3em] font-mono group-hover:text-blue-400 transition-colors">
+                            {tc.tool.replace('_', ' ')}
+                          </h4>
                           {tc.latencyMs && (
-                            <span className="text-[10px] font-mono font-bold text-slate-300 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                              {tc.latencyMs}ms
+                            <span className="text-[10px] font-mono font-black text-slate-600 bg-white/5 px-3 py-1 rounded-lg border border-white/5 uppercase tracking-widest">
+                              Lat: {tc.latencyMs}ms
                             </span>
                           )}
                         </div>
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-inner group-hover:bg-white transition-colors group-hover:border-blue-100">
-                          <p className="text-sm font-bold text-slate-700 leading-relaxed">{tc.summary}</p>
+                        <div className="glass-card p-6 rounded-[2rem] border border-white/5 shadow-inner group-hover:bg-white/[0.04] transition-all group-hover:border-blue-500/20 group-hover:translate-x-1 duration-500">
+                          <p className="text-sm font-bold text-slate-300 leading-relaxed tracking-tight group-hover:text-white transition-colors">{tc.summary}</p>
                         </div>
                         {tc.rawRef && (
-                           <details className="text-[10px] px-2">
-                             <summary className="text-slate-400 font-bold uppercase tracking-widest cursor-pointer hover:text-blue-500 transition-colors">Raw JSON Context</summary>
-                             <pre className="mt-4 p-4 bg-slate-900 text-blue-300 rounded-2xl overflow-x-auto font-mono text-[9px] leading-tight">
+                           <details className="text-[10px] px-4">
+                             <summary className="text-slate-600 font-black uppercase tracking-[0.3em] cursor-pointer hover:text-blue-400 transition-all focus:outline-none">Inspect RAW_JSON Shard</summary>
+                             <motion.pre 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="mt-6 p-6 bg-black border border-white/5 text-blue-400/90 rounded-[1.5rem] overflow-x-auto font-mono text-[9px] leading-relaxed shadow-3xl"
+                             >
                                {JSON.stringify(JSON.parse(tc.rawRef), null, 2)}
-                             </pre>
+                             </motion.pre>
                            </details>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -370,85 +417,92 @@ export default function CaseDetailPage() {
         </div>
       </div>
 
-      {/* Chat Sidebar Panel */}
+      {/* Cracked Chat Sidebar */}
       <AnimatePresence>
         {chatOpen && (
           <motion.aside 
-            initial={{ x: 400 }}
+            initial={{ x: 450 }}
             animate={{ x: 0 }}
-            exit={{ x: 400 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-            className="fixed right-0 top-0 h-full w-[400px] bg-white/80 backdrop-blur-xl border-l border-slate-200 shadow-2xl flex flex-col z-[100]"
+            exit={{ x: 450 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+            className="fixed right-0 top-0 h-full w-[450px] bg-slate-900/60 backdrop-blur-[60px] border-l border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col z-[100]"
           >
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                  <ShieldCheck className="w-6 h-6" />
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/5 backdrop-blur-md">
+              <div className="flex items-center space-x-5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-2xl shadow-blue-900/40 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-white/20 animate-pulse opacity-20" />
+                  <ShieldCheck className="w-7 h-7 relative z-10" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 tracking-tight">Ask Sentry AI</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Case-aware Assistant</p>
+                  <h3 className="text-lg font-black text-white tracking-tighter">Sentry <span className="text-blue-500 italic">Interrogator</span></h3>
+                  <p className="text-[9px] font-black text-blue-400/60 uppercase tracking-[0.3em]">Neural Security Assistant</p>
                 </div>
               </div>
               <button 
                 onClick={() => setChatOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:bg-white hover:text-slate-600 transition-all border border-transparent hover:border-slate-100 shadow-sm"
+                className="w-10 h-10 rounded-2xl text-slate-500 hover:bg-white/10 hover:text-white transition-all border border-white/5 shadow-xl flex items-center justify-center group"
               >
-                <ArrowLeft className="w-5 h-5 rotate-180" />
+                <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6" ref={chatScrollRef}>
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar" ref={chatScrollRef}>
               {chatHistory.length === 0 && (
-                <div className="text-center py-12 opacity-40">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                  <p className="text-xs font-bold text-slate-500">How can I help you investigate this case further?</p>
+                <div className="text-center py-20 opacity-30 select-none">
+                  <motion.div
+                    animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    <MessageSquare className="w-16 h-16 mx-auto mb-6 text-blue-500" />
+                  </motion.div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Awaiting Investigation Query...</p>
                 </div>
               )}
               {chatHistory.map((msg, idx) => (
                 <motion.div 
                   key={idx}
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
                   className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
+                  <div className={`max-w-[88%] p-5 rounded-[2rem] text-sm font-bold leading-relaxed shadow-2xl relative overflow-hidden ${
                     msg.role === 'user' 
-                      ? 'bg-blue-600 text-white shadow-blue-600/10' 
-                      : 'bg-white border border-slate-100 text-slate-800'
+                      ? 'bg-blue-600 text-white shadow-blue-900/40 rounded-tr-sm' 
+                      : 'bg-white/10 border border-white/10 text-slate-100 rounded-tl-sm backdrop-blur-md'
                   }`}>
                     {msg.content}
                   </div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 px-1">
-                    {msg.role} &bull; {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <span className="text-[8px] font-black text-slate-600 uppercase tracking-[0.3em] mt-3 px-2 flex items-center">
+                    {msg.role === 'user' ? 'Investigator' : 'Sentry_AI'} <div className="w-1 h-1 bg-slate-800 rounded-full mx-2" /> {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </motion.div>
               ))}
               {chatLoading && (
-                <div className="flex items-center space-x-2 text-slate-400">
-                  <RefreshCw className="animate-spin w-3 h-3" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Assistant is thinking...</span>
+                <div className="flex items-center space-x-3 text-blue-500 opacity-80 pl-2">
+                  <RefreshCw className="animate-spin w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.4em] animate-pulse">Neural Processing...</span>
                 </div>
               )}
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-              <form onSubmit={handleSendMessage} className="relative">
+            <div className="p-8 border-t border-white/5 bg-slate-900/80 backdrop-blur-2xl">
+              <form onSubmit={handleSendMessage} className="relative group">
                 <input 
                   type="text"
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
-                  placeholder="Ask about evidence, risk, or actions..."
-                  className="w-full bg-white border border-slate-200 rounded-2xl pl-4 pr-12 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  placeholder="Inquire about signal context..."
+                  className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] pl-6 pr-14 py-4 text-sm font-bold text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-2xl transition-all border-glow"
                 />
                 <button 
                   type="submit"
                   disabled={!chatMessage || chatLoading}
-                  className="absolute right-2 top-2 p-1.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all disabled:opacity-50"
+                  className="absolute right-2.5 top-2.5 w-11 h-11 bg-blue-600 text-white rounded-[1.2rem] shadow-xl shadow-blue-900/60 hover:bg-blue-500 transition-all disabled:opacity-20 flex items-center justify-center group-hover:scale-105 active:scale-95 translate-y-[-1px]"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" />
                 </button>
               </form>
+              <p className="text-[8px] font-black text-slate-700 uppercase tracking-[0.4em] mt-4 text-center">Neural Link Encrypted_AES_256</p>
             </div>
           </motion.aside>
         )}
