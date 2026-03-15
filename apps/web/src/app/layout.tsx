@@ -13,7 +13,14 @@ export default function RootLayout({
 }) {
   const SIDEBAR_PREF_KEY = 'sentry_ui_sidebar_collapsed';
   const pathname = usePathname();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(SIDEBAR_PREF_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -21,15 +28,6 @@ export default function RootLayout({
     { label: 'Closed Cases', icon: FileCheck, href: '/closed-cases' },
     { label: 'Threat Intel', icon: Search, href: '/threat-intel' },
   ];
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(SIDEBAR_PREF_KEY);
-      if (stored === 'true') setSidebarCollapsed(true);
-    } catch {
-      // Ignore storage access issues and keep default UI state.
-    }
-  }, []);
 
   useEffect(() => {
     try {

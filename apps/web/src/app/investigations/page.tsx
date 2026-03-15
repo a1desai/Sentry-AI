@@ -7,8 +7,12 @@ import Link from 'next/link';
 import { EventIcon, RiskBadge, formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
 import { apiFetch } from '@/lib/api';
 
+type InvestigationCase = CaseRecord & {
+  verdictStatus?: string;
+};
+
 export default function InvestigationsPage() {
-  const [cases, setCases] = useState<CaseRecord[]>([]);
+  const [cases, setCases] = useState<InvestigationCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<'time_desc' | 'time_asc' | 'risk_desc' | 'risk_asc' | 'event_type'>('time_desc');
@@ -17,7 +21,7 @@ export default function InvestigationsPage() {
   const fetchCases = async () => {
     try {
       setLoading(true);
-      const data = await apiFetch<{ cases?: CaseRecord[] }>('/api/cases');
+      const data = await apiFetch<{ cases?: InvestigationCase[] }>('/api/cases');
       if (data.cases) {
         setCases(data.cases);
       }
@@ -141,7 +145,7 @@ export default function InvestigationsPage() {
                 </tr>
               </thead>
               <tbody style={{ borderColor: 'var(--border-soft)' }}>
-                {sortedFilteredCases.map((c: any) => (
+                {sortedFilteredCases.map((c: InvestigationCase) => (
                   <tr key={c.caseId} className="transition-colors group" style={{ borderBottom: '1px solid var(--border-soft)' }}>
                     <td className="px-8 py-5">
                       <div className="flex items-center space-x-4">

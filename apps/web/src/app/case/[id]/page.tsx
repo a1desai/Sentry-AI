@@ -126,7 +126,10 @@ export default function CaseDetailPage() {
   }, [chatHistory]);
 
 
-  const handleSendMessage = async (event: React.FormEvent, prefill?: string) => {
+  const handleSendMessage = async (
+    event: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>,
+    prefill?: string
+  ) => {
     event.preventDefault();
     const outgoing = prefill ?? chatMessage;
     if (!outgoing.trim() || chatLoading) return;
@@ -481,7 +484,7 @@ export default function CaseDetailPage() {
         {/* Suggested questions */}
         <div className="flex flex-wrap gap-2 mb-3">
           {SUGGESTED_QUESTIONS.map(q => (
-            <button key={q} onClick={e => handleSendMessage(e as any, q)}
+            <button key={q} onClick={e => void handleSendMessage(e, q)}
               className="text-xs px-3 py-1.5 rounded-full border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 font-semibold">
               {q}
             </button>
