@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Play } from 'lucide-react';
 import { CaseRecord } from '@sentry/shared';
+import { useRouter } from 'next/navigation';
 import { EventIcon, RiskBadge, formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
 import { apiFetch, apiUrl } from '@/lib/api';
 
@@ -16,6 +17,7 @@ type RiskTrendPoint = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [riskTrend, setRiskTrend] = useState<RiskTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +115,7 @@ export default function DashboardPage() {
                     {cases.map((c) => (
                       <tr 
                         key={c.caseId} 
-                        onClick={() => window.location.href = `/case/${c.caseId}`}
+                        onClick={() => router.push(`/case/${c.caseId}`)}
                         className="transition-colors cursor-pointer group"
                       >
                         <td className="px-8 py-5">
