@@ -14,6 +14,7 @@ import { apiFetch, apiUrl } from '@/lib/api';
 import { formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RelationshipGraph } from '@/components/cases/RelationshipGraph';
+import { AgentAnalysis } from '@/components/cases/AgentAnalysis';
 
 type CaseDetail = CaseRecord & {
   chatMessages?: ChatMessage[];
@@ -229,6 +230,9 @@ export default function CaseDetailPage() {
           <div className="grid grid-cols-12 gap-8">
             {/* Left: Guidance & Evidence */}
             <div className="col-span-12 lg:col-span-4 space-y-6">
+              {/* Agent Analysis - NEW */}
+              <AgentAnalysis />
+              
               {/* Guidance Card */}
               <motion.div 
                 whileHover={{ y: -5 }}

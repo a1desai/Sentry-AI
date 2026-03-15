@@ -46,6 +46,9 @@ export async function askBackboard(prompt: string, context: string = ''): Promis
     if (prompt.toLowerCase().includes('exfiltration') || prompt.toLowerCase().includes('rclone')) {
       return "Critical: Data exfiltration detected via RCLONE to a malicious RU-based infrastructure. Volume: 2.4GB. I have triggered an automated network isolation for the source device to prevent further loss.";
     }
+    if (prompt.toLowerCase().includes('fraud') || prompt.toLowerCase().includes('transaction')) {
+      return "High Fidelity Fraud Alert: The Rapid Succession Transfer ($42,000) matches the 'Salami Slicing' footprint correlated with previous APT-28 financial campaigns. Destination account AC-XXXX-4001 has been flagged by TD Cyber-Intel as a high-risk crypto-bridge. Recommedation: Freeze destination transfer and flag for human AML review.";
+    }
     if (prompt.toLowerCase().includes('recommend') || prompt.toLowerCase().includes('steps')) {
       return "1. Isolate affected endpoints immediately. 2. Revoke all active session tokens for the compromised user. 3. Sweep logs for further indicators of compromise (IOCs) across the IP range. 4. Initiate an external threat hunt for the destination C2 domain.";
     }

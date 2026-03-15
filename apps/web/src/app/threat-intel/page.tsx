@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Search, Globe, Shield, Activity, Database, AlertCircle, CheckCircle2, Info, RefreshCw } from 'lucide-react';
 import { ThreatIntelResult } from '@sentry/shared';
 import { apiFetch } from '@/lib/api';
+import { GlobalHeatmap } from '@/components/dashboard/GlobalHeatmap';
 
 export default function ThreatIntelPage() {
   const [query, setQuery] = useState('');
@@ -33,6 +34,10 @@ export default function ThreatIntelPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Threat Intelligence Center</h1>
         <p className="text-slate-500 mt-1">Cross-provider reputation search and infrastructure analysis</p>
+      </div>
+
+      <div className="mb-10">
+        <GlobalHeatmap />
       </div>
 
       <div className="grid grid-cols-12 gap-8">

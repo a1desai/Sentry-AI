@@ -33,7 +33,8 @@ export const SCENARIO_NAMES = [
   'malicious_login',
   'phishing_email',
   'url_click',
-  'data_exfiltration'
+  'data_exfiltration',
+  'financial_fraud'
 ] as const;
 
 export type ScenarioName = typeof SCENARIO_NAMES[number];
@@ -135,6 +136,27 @@ export class SimulatorService {
             mfaUsed: false,
             privilegedUser: true,
             allowlistMatch: false
+          }
+        };
+
+      case 'financial_fraud':
+        return {
+          eventId,
+          eventType: 'financial_fraud',
+          user,
+          sourceIp: '185.220.101.' + Math.floor(Math.random() * 255),
+          timestamp,
+          artifacts: {
+            transactionId: `TX-${uuidv4().substring(0, 8).toUpperCase()}`,
+            amount: `$${(Math.random() * 50000 + 10000).toFixed(2)}`,
+            destinationAccount: `AC-XXXX-${Math.floor(Math.random() * 9000 + 1000)}`,
+            merchant: 'Global Crypto Exchange'
+          },
+          context: {
+            mfaUsed: false,
+            privilegedUser: false,
+            allowlistMatch: false,
+            anomalyType: 'Rapid Succession Transfer'
           }
         };
 

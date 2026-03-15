@@ -202,6 +202,18 @@ export default function DashboardPage() {
                 variant="danger"
               />
               <ScenarioButton 
+                label="Data Exfil" desc="Sensitive data exfiltration attempt" 
+                onClick={() => simulateScenario('data_exfiltration')}
+                loading={simulating === 'data_exfiltration'}
+                variant="danger"
+              />
+              <ScenarioButton 
+                label="Fin Fraud" desc="Unauthorized financial transaction" 
+                onClick={() => simulateScenario('financial_fraud')}
+                loading={simulating === 'financial_fraud'}
+                variant="danger"
+              />
+              <ScenarioButton 
                 label="Targeted Phishing" desc="Email auth failure" 
                 onClick={() => simulateScenario('phishing_email')}
                 loading={simulating === 'phishing_email'}
