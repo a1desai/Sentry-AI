@@ -45,6 +45,12 @@ export default function CaseDetailPage() {
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [briefingLoading, setBriefingLoading] = useState(false);
+  const [verdictLoading, setVerdictLoading] = useState(false);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideAction, setOverrideAction] = useState<string>('');
+  const [reflection, setReflection] = useState('');
+  const [streamingReflection, setStreamingReflection] = useState('');
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const handlePlayBrief = async () => {
@@ -131,6 +137,40 @@ export default function CaseDetailPage() {
     } finally {
       setChatLoading(false);
     }
+  };
+
+  const handleVerdict = async (verdict: 'confirm' | 'override' | 'escalate', reason?: string, action?: string) => {
+    try {
+      setVerdictLoading(true);
+      const res = await fetch(apiUrl(`/api/cases/${id}/verdict`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verdict, reason, overrideAction: action }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCaseData((prev: CaseDetail | null) => prev ? { ...prev, verdict, verdictReason: reason, agentReflection: data.reflection } : null);
+        if (data.reflection) {
+          setReflection(data.reflection);
+          startStreaming(data.reflection);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setVerdictLoading(false);
+      setShowOverrideModal(false);
+    }
+  };
+
+  const startStreaming = (text: string) => {
+    setStreamingReflection('');
+    let i = 0;
+    const interval = setInterval(() => {
+      setStreamingReflection(prev => prev + text[i]);
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 20);
   };
 
   if (loading) return (
@@ -301,31 +341,73 @@ export default function CaseDetailPage() {
                 </div>
               </div>
 
-              {/* Policy Enforcer Card */}
-              <div className="glass-card rounded-[2.5rem] p-10 shadow-2xl border border-white/5">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Autonomous Policy</h3>
-                  <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-inner ${
-                    c.actionStatus === 'executed' 
-                      ? 'bg-green-600/20 text-green-400 border border-green-500/30 shadow-[0_0_10px_#10b98122]' 
-                      : 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                  }`}>
-                    {c.actionStatus.toUpperCase()}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-6">
-                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-2xl relative overflow-hidden ${
-                    c.action === 'allow' ? 'bg-green-600 shadow-green-900/40' : 'bg-blue-600 shadow-blue-900/40'
-                  }`}>
-                    <div className="absolute inset-0 bg-white/10 opacity-20" />
-                    {c.action === 'allow' ? <ShieldCheck className="w-8 h-8 text-white relative z-10" /> : <AlertTriangle className="w-8 h-8 text-white relative z-10" />}
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-white tracking-tighter uppercase">{formatActionLabel(c.action)}</div>
-                    <div className="text-[10px] text-slate-600 font-black uppercase tracking-widest mt-1">Enforced by Sentry_Core_v2</div>
-                  </div>
-                </div>
               </div>
+              
+              {/* Analyst Verdict Loop HUD */}
+              {c.classification === 'HIGH' && !caseData.verdict && (
+                <div className="glass-card rounded-[2.5rem] p-10 shadow-3xl border border-blue-500/30 bg-blue-600/5 relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 p-6 opacity-10">
+                    <ShieldCheck className="w-16 h-16 text-blue-400" />
+                  </div>
+                  
+                  <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] mb-8">
+                    Analyst Final Verdict Required
+                  </h3>
+                  
+                  <div className="flex flex-col space-y-4 relative z-10">
+                    <button 
+                      onClick={() => handleVerdict('confirm')}
+                      disabled={verdictLoading}
+                      className="w-full py-4 rounded-2xl bg-green-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-green-900/40 hover:bg-green-500 transition-all flex items-center justify-center group"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" />
+                      Confirm Verdict
+                    </button>
+                    
+                    <button 
+                      onClick={() => setShowOverrideModal(true)}
+                      disabled={verdictLoading}
+                      className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-white/10 hover:border-blue-500/30 transition-all flex items-center justify-center group"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-3 group-hover:rotate-12 transition-transform text-amber-500" />
+                      Override Record
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleVerdict('escalate')}
+                      disabled={verdictLoading}
+                      className="w-full py-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 font-black text-xs uppercase tracking-widest hover:bg-indigo-600/30 transition-all flex items-center justify-center group"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-3 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      Escalate to SOC T2
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Verdict Status Indicator */}
+              {caseData.verdict && (
+                <div className="glass-card rounded-[2.5rem] p-8 border border-white/5 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      caseData.verdict === 'confirm' ? 'bg-green-600' : caseData.verdict === 'override' ? 'bg-amber-600' : 'bg-indigo-600'
+                    }`}>
+                      {caseData.verdict === 'confirm' && <CheckCircle className="w-5 h-5 text-white" />}
+                      {caseData.verdict === 'override' && <AlertTriangle className="w-5 h-5 text-white" />}
+                      {caseData.verdict === 'escalate' && <ExternalLink className="w-5 h-5 text-white" />}
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Analyst Verdict</div>
+                      <div className="text-sm font-black text-white uppercase tracking-tighter">{caseData.verdict.toUpperCase()}ED BY ANALYST</div>
+                    </div>
+                  </div>
+                  {caseData.verdictReason && (
+                    <div className="max-w-[50%] text-[10px] font-black italic text-slate-500 text-right">
+                      &ldquo;{caseData.verdictReason}&rdquo;
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Evidence Vault Evidence list */}
               {c.evidenceList && c.evidenceList.length > 0 && (
@@ -369,7 +451,7 @@ export default function CaseDetailPage() {
                 <div className="space-y-16 relative">
                   <div className="absolute top-0 left-6 w-px h-full bg-white/5 shadow-[0_0_10px_rgba(255,255,255,0.02)]" />
                   
-                  {toolCalls.map((tc, i) => (
+                  {toolCalls.map((tc: ToolCall, i: number) => (
                     <motion.div 
                       key={tc.id} 
                       initial={{ opacity: 0, x: 20 }}
@@ -411,11 +493,123 @@ export default function CaseDetailPage() {
                     </motion.div>
                   ))}
                 </div>
+
+                {/* Agent Reflection Panel */}
+                {(streamingReflection || caseData.agentReflection) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-10 glass-card rounded-[3rem] border border-blue-500/20 p-12 bg-blue-600/5 relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
+                    <div className="flex items-center space-x-5 mb-8">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-2xl overflow-hidden relative">
+                        <div className="absolute inset-0 bg-white/10 animate-pulse" />
+                        <Activity className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-black text-white tracking-tighter">Sentry <span className="text-blue-500 italic">Self-Reflection</span></h3>
+                        <p className="text-[9px] font-black text-blue-400/60 uppercase tracking-[0.3em]">Autonomous Learning Sequence</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <div className="p-8 bg-black/40 rounded-[2rem] border border-white/5 shadow-inner">
+                        <p className="text-sm font-bold text-slate-300 leading-relaxed font-mono">
+                          {streamingReflection || caseData.agentReflection}
+                          {streamingReflection && <span className="inline-block w-2 h-4 bg-blue-500 ml-1 animate-pulse" />}
+                        </p>
+                      </div>
+                      
+                      {reflection.includes('Adaptive Allowlist Rule') && (
+                        <div className="flex items-center justify-between p-6 bg-green-600/10 border border-green-500/20 rounded-2xl">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 rounded-xl bg-green-600/20 flex items-center justify-center">
+                              <Zap className="w-5 h-5 text-green-400" />
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-black text-green-400 uppercase tracking-widest">Policy Improvement Hint</div>
+                              <div className="text-xs font-black text-white">Rule candidate detected. Apply to core?</div>
+                            </div>
+                          </div>
+                          <button className="px-6 py-2.5 bg-green-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-green-500 transition-all">
+                            Enable Policy
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Override Modal */}
+        <AnimatePresence>
+          {showOverrideModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowOverrideModal(false)}
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative w-full max-w-lg glass-card rounded-[3rem] p-12 border border-blue-500/20 shadow-[0_0_100px_rgba(37,99,235,0.2)] bg-slate-900"
+              >
+                <h3 className="text-2xl font-black text-white tracking-tighter mb-2">Override <span className="text-blue-500 italic">Intelligence</span></h3>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-10">Manual Policy Adjustment</p>
+                
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Corrective Action</label>
+                    <select 
+                      value={overrideAction}
+                      onChange={(e) => setOverrideAction(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
+                    >
+                      <option value="">Select manual action...</option>
+                      <option value="allow">ALLOW - False Positive</option>
+                      <option value="block_session">BLOCK_SESSION - Confirmed Threat</option>
+                      <option value="require_mfa">REQUIRE_MFA - Suspicious Activity</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Analyst Justification</label>
+                    <textarea 
+                      value={overrideReason}
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                      placeholder="Explain why the agent was incorrect..."
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[120px] resize-none"
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-4 pt-4">
+                    <button 
+                      onClick={() => setShowOverrideModal(false)}
+                      className="flex-1 py-4 rounded-2xl border border-white/5 text-slate-500 font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={() => handleVerdict('override', overrideReason, overrideAction)}
+                      disabled={!overrideAction || !overrideReason || verdictLoading}
+                      className="flex-1 py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-900/40 hover:bg-blue-500 disabled:opacity-20 transition-all"
+                    >
+                      {verdictLoading ? <RefreshCw className="w-4 h-4 animate-spin mx-auto" /> : 'Commit Override'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
       {/* Cracked Chat Sidebar */}
       <AnimatePresence>

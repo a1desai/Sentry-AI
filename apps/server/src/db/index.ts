@@ -16,6 +16,9 @@ db.exec(`
     actionStatus TEXT NOT NULL,
     evidenceList TEXT, -- JSON array
     guidance TEXT, -- JSON object
+    verdict TEXT, -- 'confirm', 'override', 'escalate'
+    verdictReason TEXT,
+    agentReflection TEXT,
     createdAt TEXT NOT NULL
   );
 
@@ -23,13 +26,33 @@ db.exec(`
   PRAGMA foreign_keys=OFF;
 `);
 
-try {
-  db.exec("ALTER TABLE cases ADD COLUMN guidance TEXT;");
-} catch (e) {
-  // Column already exists, ignore
-}
+const migrations = [
+  "ALTER TABLE cases ADD COLUMN guidance TEXT;",
+  "ALTER TABLE cases ADD COLUMN verdict TEXT;",
+  "ALTER TABLE cases ADD COLUMN verdictReason TEXT;",
+  "ALTER TABLE cases ADD COLUMN agentReflection TEXT;"
+];
+
+migrations.forEach(m => {
+  try {
+    db.exec(m);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+});
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS proposed_rules (
+    id TEXT PRIMARY KEY,
+    caseId TEXT NOT NULL,
+    condition TEXT NOT NULL,
+    action TEXT NOT NULL,
+    logic TEXT NOT NULL,
+    status TEXT NOT NULL, -- 'pending', 'accepted', 'rejected'
+    createdAt TEXT NOT NULL,
+    FOREIGN KEY(caseId) REFERENCES cases(caseId)
+  );
+
   CREATE TABLE IF NOT EXISTS tool_calls (
     id TEXT PRIMARY KEY,
     caseId TEXT NOT NULL,
@@ -116,6 +139,32 @@ export function saveChatMessage(msg: { id: string, caseId: string, role: string,
 
 export function getAllCases() {
   return db.prepare('SELECT * FROM cases ORDER BY createdAt DESC').all();
+}
+
+export function updateCaseVerdict(caseId: string, verdict: string, verdictReason?: string, agentReflection?: string) {
+  const stmt = db.prepare('UPDATE cases SET verdict = ?, verdictReason = ?, agentReflection = ? WHERE caseId = ?');
+  stmt.run(verdict, verdictReason || null, agentReflection || null, caseId);
+}
+
+export function saveProposedRule(rule: { 
+  id: string, 
+  caseId: string, 
+  condition: string, 
+  action: string, 
+  logic: string, 
+  status: string, 
+  createdAt: string 
+}) {
+  const stmt = db.prepare('INSERT INTO proposed_rules (id, caseId, condition, action, logic, status, createdAt) VALUES (@id, @caseId, @condition, @action, @logic, @status, @createdAt)');
+  stmt.run(rule);
+}
+
+export function getProposedRules(caseId: string) {
+  return db.prepare('SELECT * FROM proposed_rules WHERE caseId = ?').all(caseId);
+}
+
+export function getRecentOverrides(limit = 10) {
+  return db.prepare("SELECT * FROM cases WHERE verdict = 'override' ORDER BY createdAt DESC LIMIT ?").all(limit);
 }
 
 export default db;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, RefreshCw, ChevronRight, History, Activity } from 'lucide-react';
+import { Search, Filter, RefreshCw, ChevronRight, History, Activity, CheckCircle, AlertTriangle } from 'lucide-react';
 import { CaseRecord } from '@sentry/shared';
 import Link from 'next/link';
 import { EventIcon, RiskBadge, formatActionLabel, formatCaseAge, formatEventTypeLabel } from '@/components/cases/presenters';
@@ -101,6 +101,7 @@ export default function InvestigationsPage() {
                   <th className="px-8 py-6">Telemetry Marker</th>
                   <th className="px-8 py-6">Risk Quotient</th>
                   <th className="px-8 py-6">Policy Enforcement</th>
+                  <th className="px-8 py-6">Analyst Verdict</th>
                   <th className="px-10 py-6 text-right">Vault Entry</th>
                 </tr>
               </thead>
@@ -151,6 +152,35 @@ export default function InvestigationsPage() {
                             Policy {c.actionStatus.replace('_', ' ')}
                           </div>
                         </div>
+                      </td>
+                      <td className="px-8 py-7">
+                        {c.verdict ? (
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              c.verdict === 'confirm' ? 'bg-green-600/20 text-green-400 border border-green-500/30' :
+                              c.verdict === 'override' ? 'bg-amber-600/20 text-amber-400 border border-amber-500/30' :
+                              'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                            }`}>
+                              {c.verdict === 'confirm' && <CheckCircle className="w-4 h-4" />}
+                              {c.verdict === 'override' && <AlertTriangle className="w-4 h-4" />}
+                              {c.verdict === 'escalate' && <Activity className="w-4 h-4" />}
+                            </div>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${
+                              c.verdict === 'confirm' ? 'text-green-400' :
+                              c.verdict === 'override' ? 'text-amber-400' :
+                              'text-indigo-400'
+                            }`}>
+                              {c.verdict}ed
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-3 opacity-30">
+                            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center">
+                              <History className="w-4 h-4 text-slate-600" />
+                            </div>
+                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Pending</span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-10 py-7 text-right text-slate-800">
                         <Link 

@@ -78,8 +78,22 @@ export const CaseRecordSchema = z.object({
     containmentSteps: z.array(z.string()),
     escalationAdvice: z.string(),
   }).optional(),
+  verdict: z.enum(['confirm', 'override', 'escalate']).optional(),
+  verdictReason: z.string().optional(),
+  agentReflection: z.string().optional(),
 });
 export type CaseRecord = z.infer<typeof CaseRecordSchema>;
+
+export const ProposedRuleSchema = z.object({
+  id: z.string(),
+  caseId: z.string(),
+  condition: z.string(),
+  action: z.string(),
+  logic: z.string(),
+  status: z.enum(['pending', 'accepted', 'rejected']),
+  createdAt: z.string().datetime(),
+});
+export type ProposedRule = z.infer<typeof ProposedRuleSchema>;
 
 export const AttackChainLinkSchema = z.object({
   caseId: z.string(),

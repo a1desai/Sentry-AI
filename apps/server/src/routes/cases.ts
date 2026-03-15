@@ -183,4 +183,68 @@ router.post('/:id/brief', async (req, res) => {
   }
 });
 
+// PATCH Verdict: Analyst Feedback Loop
+router.patch('/:id/verdict', async (req, res) => {
+  try {
+    const { verdict, reason, overrideAction } = req.body;
+    const caseId = req.params.id;
+    const caseData = getCase(caseId);
+    
+    if (!caseData) return res.status(404).json({ error: 'Case not found' });
+
+    let reflection = '';
+    
+    if (verdict === 'override') {
+      // Agent Learning Logic
+      const recentOverrides = require('../db').getRecentOverrides(5);
+      const reasoning = caseData.toolCalls.map((tc: any) => `- ${tc.tool}: ${tc.summary}`).join('\n');
+      
+      const prompt = `The human analyst has OVERRIDDEN your verdict for Case ${caseId}.
+      Your Original Risk: ${caseData.classification} (Score: ${caseData.riskScore})
+      Your Recommended Action: ${caseData.action}
+      
+      The Analyst corrected this to: ${overrideAction}
+      Analyst Reason: "${reason}"
+      
+      Your original reasoning chain was:
+      ${reasoning}
+      
+      Recently, you've been overridden on these cases:
+      ${recentOverrides.map((o: any) => `- Case ${o.caseId}: ${o.verdictReason}`).join('\n')}
+      
+      TASK:
+      1. Re-examine your reasoning. Identify which signals misled you.
+      2. If you see a pattern in overrides, propose an Adaptive Allowlist Rule.
+      3. Format your response as a direct message to the analyst.
+      
+      Structure:
+      "Understood. I traced back my reasoning chain... [Analysis] ... I recommend creating an Adaptive Allowlist Rule: [Rule] ... Should I apply this rule?"`;
+
+      reflection = await askBackboard(prompt, "You are Sentry AI. You are humble and learning from human feedback.");
+      
+      // Extract proposed rule (simple heuristic for demo)
+      if (reflection.includes('IF') && reflection.includes('THEN')) {
+        const ruleParts = reflection.match(/IF (.*) THEN (.*)/);
+        if (ruleParts) {
+          require('../db').saveProposedRule({
+            id: uuidv4(),
+            caseId,
+            condition: ruleParts[1],
+            action: ruleParts[2],
+            logic: reflection,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+    }
+
+    require('../db').updateCaseVerdict(caseId, verdict, reason, reflection);
+    
+    res.json({ success: true, reflection });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
